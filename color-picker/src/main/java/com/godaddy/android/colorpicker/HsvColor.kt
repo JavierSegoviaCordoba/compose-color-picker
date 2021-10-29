@@ -40,6 +40,42 @@ data class HsvColor(
         return android.graphics.Color.HSVToColor((alpha * 255).toInt(), floatArrayOf(hue, saturation, value))
     }
 
+    fun getComplementaryColor(): List<HsvColor> {
+        return listOf(this.copy(hue = (hue + 180) % 360))
+    }
+
+    fun getSplitComplementaryColors(): List<HsvColor> {
+        return listOf(this.copy( hue = (hue + 150) % 360), this.copy( hue = (hue + 210 ) % 360))
+    }
+
+    fun getTriadicColors() : List<HsvColor> {
+        return listOf(
+            this.copy(hue = (hue + 120) % 360),
+            this.copy( hue = (hue + 240) % 360))
+    }
+
+    fun getTetradicColors() : List<HsvColor> {
+        return listOf(
+            this.copy(hue = (hue + 90) % 360),
+            this.copy( hue = (hue + 180) % 360),
+            this.copy( hue = (hue + 270) % 360),
+        )
+    }
+
+    fun getAnalagousColors() : List<HsvColor> {
+        return listOf(
+            this.copy(hue = (hue + 30) % 360),
+            this.copy( hue = (hue + 60) % 360),
+            this.copy( hue = (hue + 90) % 360),
+        )
+    }
+
+    fun getMonochromaticColors() : List<HsvColor> {
+        return listOf(
+            this.copy(saturation =  (saturation + 0.5f).coerceAtMost(1f)),
+        )
+    }
+
     companion object {
 
         val DEFAULT = HsvColor(360f, 1.0f, 1.0f, 1.0f)

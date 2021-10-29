@@ -4,13 +4,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
@@ -18,13 +23,15 @@ import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ExperimentalGraphicsApi
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.godaddy.android.colorpicker.harmony.ColorHarmonyMode
+import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
+import com.godaddy.android.colorpicker.harmony.getColors
 import com.godaddy.android.colorpicker.theme.ComposeColorPickerTheme
 
 class SampleColorPickerActivity : ComponentActivity() {
@@ -42,19 +49,42 @@ class SampleColorPickerActivity : ComponentActivity() {
                         val currentColor = remember {
                             mutableStateOf(Color.Companion.Red)
                         }
-                        ColorPreviewInfo(currentColor = currentColor.value)
+                        val harmonyMode = remember {
+                            mutableStateOf(ColorHarmonyMode.Triadic)
+                        }
+                        val harmonyColors = remember(harmonyMode) {
+                            mutableStateOf(listOf<HsvColor>())
+                        }
+                        val expanded = remember {
+                            mutableStateOf(false)
+                        }
 
-                        // Here is how to add a Color Picker to your compose tree:
-                        ClassicColorPicker(
-                            color = currentColor.value,
+                        Text(harmonyMode.value.name,
                             modifier = Modifier
-                                .height(300.dp)
-                                .padding(16.dp),
-                            onColorChanged = { hsvColor: HsvColor ->
-                                // Triggered when the color changes, do something with the newly picked color here!
-                                currentColor.value = hsvColor.toColor()
+                                .clickable {
+                                    expanded.value = !expanded.value
+                                }
+                                .padding(16.dp))
+
+                        DropdownMenu(expanded = expanded.value,
+                            onDismissRequest = { expanded.value = false }) {
+                            ColorHarmonyMode.values().forEach {
+                                DropdownMenuItem(onClick = {
+                                    harmonyMode.value = it
+                                    expanded.value = false
+                                }) {
+                                    Text(it.name)
+                                }
                             }
-                        )
+
+                        }
+                        ColorPreviewInfo(currentColor = currentColor.value,
+                            harmonyColors = harmonyColors.value)
+                        HarmonyColorPicker(harmonyMode = harmonyMode.value,
+                            onColorsChanged = { color, _ ->
+                            currentColor.value = color.toColor()
+                            harmonyColors.value = color.getColors(harmonyMode.value)
+                        })
                     }
                 }
             }
@@ -62,26 +92,46 @@ class SampleColorPickerActivity : ComponentActivity() {
     }
 }
 
+fun Color.toHexString(): String {
+    return String.format("#%08X", -0x1 and this.hashCode())
+}
+
+@ExperimentalGraphicsApi
 @Composable
-fun ColorPreviewInfo(currentColor: Color) {
+fun ColorPreviewInfo(currentColor: Color, harmonyColors: List<HsvColor>) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            modifier = Modifier.padding(16.dp),
-            text = "a: ${currentColor.alpha} \n" +
-                    "r: ${currentColor.red} \n" +
-                    "g: ${currentColor.green} \n" +
-                    "b: ${currentColor.blue}"
-        )
-        Spacer(
-            modifier = Modifier
-                .background(
-                    currentColor,
-                    shape = CircleShape
+        Row(modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start) {
+            Spacer(
+                modifier = Modifier
+                    .padding(4.dp)
+                    .background(
+                        currentColor,
+                        shape = CircleShape
+                    )
+                    .size(48.dp)
+            )
+            Text(
+                modifier = Modifier.padding(16.dp),
+                text = currentColor.toHexString()
+            )
+
+        }
+        Row(modifier = Modifier.fillMaxWidth()) {
+            harmonyColors.forEach {
+                Spacer(
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .background(
+                            it.toColor(),
+                            shape = CircleShape
+                        )
+                        .size(48.dp)
+
+
                 )
-                .size(48.dp)
-                .align(Alignment.CenterHorizontally)
-        )
-        Spacer(Modifier.height(16.dp))
+            }
+        }
     }
 }
 
