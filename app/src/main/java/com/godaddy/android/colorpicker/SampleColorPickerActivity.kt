@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.ExposedDropdownMenuBox
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
@@ -36,6 +38,7 @@ import com.godaddy.android.colorpicker.theme.ComposeColorPickerTheme
 
 class SampleColorPickerActivity : ComponentActivity() {
 
+    @ExperimentalMaterialApi
     @ExperimentalGraphicsApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,29 +62,35 @@ class SampleColorPickerActivity : ComponentActivity() {
                             mutableStateOf(false)
                         }
 
-                        Text(harmonyMode.value.name,
-                            modifier = Modifier
-                                .clickable {
-                                    expanded.value = !expanded.value
-                                }
-                                .padding(16.dp))
 
-                        DropdownMenu(expanded = expanded.value,
-                            onDismissRequest = { expanded.value = false }) {
-                            ColorHarmonyMode.values().forEach {
-                                DropdownMenuItem(onClick = {
-                                    harmonyMode.value = it
-                                    expanded.value = false
-                                }) {
-                                    Text(it.name)
+                        ExposedDropdownMenuBox(
+                            modifier = Modifier.fillMaxWidth(),
+                            expanded = expanded.value, onExpandedChange = {}) {
+                            Text(harmonyMode.value.name,
+                                modifier = Modifier
+                                    .clickable {
+                                        expanded.value = !expanded.value
+                                    }
+                                    .padding(16.dp))
+                            ExposedDropdownMenu(expanded = expanded.value,
+                                onDismissRequest = { expanded.value = false }) {
+                                ColorHarmonyMode.values().forEach {
+                                    DropdownMenuItem(onClick = {
+                                        harmonyMode.value = it
+                                        expanded.value = false
+                                        harmonyColors.value = HsvColor.from(currentColor.value).getColors(harmonyMode.value)
+                                    }) {
+                                        Text(it.name)
+                                    }
                                 }
+
                             }
-
                         }
+
                         ColorPreviewInfo(currentColor = currentColor.value,
                             harmonyColors = harmonyColors.value)
                         HarmonyColorPicker(harmonyMode = harmonyMode.value,
-                            onColorsChanged = { color, _ ->
+                            onColorChanged = { color ->
                             currentColor.value = color.toColor()
                             harmonyColors.value = color.getColors(harmonyMode.value)
                         })
