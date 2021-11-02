@@ -1,6 +1,7 @@
 package com.godaddy.android.colorpicker.harmony
 
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateOffsetAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -74,7 +75,9 @@ fun HarmonyColorPicker(
         ) {
             val diameter = constraints.maxWidth
             val colorWheel = remember(diameter) { ColorWheel(diameter) }
-
+            var currentlyDragging by remember {
+                mutableStateOf(false)
+            }
             val inputModifier = Modifier.pointerInput(colorWheel) {
                 fun updateColorWheel(newPosition: Offset) {
                     // Work out if the new position is inside the circle we are drawing, and has a
@@ -89,11 +92,13 @@ fun HarmonyColorPicker(
                 forEachGesture {
                     awaitPointerEventScope {
                         val down = awaitFirstDown(false)
+                        currentlyDragging = true
                         updateColorWheel(down.position)
                         drag(down.id) { change ->
                             change.consumePositionChange()
                             updateColorWheel(change.position)
                         }
+                        currentlyDragging = false
                     }
                 }
             }
@@ -116,13 +121,20 @@ fun HarmonyColorPicker(
                     animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)
                 )
 
-                Magnifier(position = positionAnimated, color = hsvColor, large = true)
+                val animatedDiameter = animateDpAsState(
+                    targetValue = if (currentlyDragging) {
+                        SelectionCircleDiameterLarger
+                    } else {
+                        SelectionCircleDiameterLarge
+                    }
+                )
+                Magnifier(position = positionAnimated, color = hsvColor, diameter = animatedDiameter.value)
 
                 hsvColor.getColors(harmonyMode).forEach { hsvColor ->
                     val positionForColor by animateOffsetAsState(targetValue = positionForColor(hsvColor, size),
                         animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy))
 
-                    Magnifier(position = positionForColor, color = hsvColor)
+                    Magnifier(position = positionForColor, color = hsvColor, diameter = SelectionCircleDiameter)
                 }
             }
         }
@@ -158,17 +170,13 @@ fun HsvColor.getColors(colorHarmonyMode: ColorHarmonyMode): List<HsvColor> {
  */
 @ExperimentalGraphicsApi
 @Composable
-private fun Magnifier(position: Offset, color: HsvColor, large: Boolean = false) {
-    val circleSize = if (large) {
-        SelectionCircleDiameterLarge
-    }else {
-        SelectionCircleDiameter
-    }
+private fun Magnifier(position: Offset, color: HsvColor, diameter: Dp) {
+
     val offset = with(LocalDensity.current) {
         Modifier.offset(
             position.x.toDp() - MagnifierWidth / 2,
             // Align with the center of the selection circle
-            position.y.toDp() - (MagnifierHeight - (circleSize / 2))
+            position.y.toDp() - (MagnifierHeight - (diameter / 2))
         )
     }
 
@@ -179,10 +187,10 @@ private fun Magnifier(position: Offset, color: HsvColor, large: Boolean = false)
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(circleSize),
+                .height(diameter),
             contentAlignment = Alignment.Center
         ) {
-            MagnifierSelectionCircle(Modifier.size(circleSize), color)
+            MagnifierSelectionCircle(Modifier.size(diameter), color)
         }
     }
 
@@ -192,6 +200,7 @@ private val MagnifierWidth = 110.dp
 private val MagnifierHeight = 100.dp
 private val SelectionCircleDiameter = 30.dp
 private val SelectionCircleDiameterLarge = 40.dp
+private val SelectionCircleDiameterLarger = 48.dp
 
 
 /**
